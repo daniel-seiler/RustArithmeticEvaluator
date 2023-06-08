@@ -1,5 +1,6 @@
 use std::fmt;
 use std::fmt::write;
+use std::net::Shutdown::Write;
 
 pub enum Token {
     Int {
@@ -13,7 +14,7 @@ pub enum Token {
         left: Box<Token>,
         right: Box<Token>
     },
-    Divide {
+    Div {
         left: Box<Token>,
         right: Box<Token>
     },
@@ -33,8 +34,9 @@ impl fmt::Display for Token {
             Token::Int { val } => write!(f, "{}", val),
             Token::Plus { left, right } => write!(f, "{} + {}", left, right),
             Token::Mult { left, right } => write!(f, "{} * {}", left, right),
-            Token::Divide { left, right } => write!(f, "{} / {}", left, right),
+            Token::Div { left, right } => write!(f, "{} / {}", left, right),
             Token::Mod { left, right } => write!(f, "{} % {}", left, right),
+            Token::Minus { left, right} => write!(f, "{} - {}", left, right),
             _ => write!(f, "err")
         }
     }
@@ -50,13 +52,17 @@ fn split_at_last_occurrence(input: &str, delimiter: char) -> (&str, &str) {
 }
 
 fn eval(token : &Token) -> i32 {
-    match token {
-        Token::Int { val } => return *val,
-        Token::Plus { left, right } => return eval(left) + eval(right),
-        Token::Minus { left, right } => return eval(left) - eval(right),
-        Token::Mult { left, right } => return eval(left) * eval(right),
-        Token::Div { left, right } => return eval(left) / eval(right),
-        Token::Mod { left, right } => return eval(left) % eval(right),
+    return match token {
+        Token::Int { val } => *val,
+        Token::Plus { left, right } => eval(left) + eval(right),
+        Token::Minus { left, right } => eval(left) - eval(right),
+        Token::Mult { left, right } => eval(left) * eval(right),
+        Token::Div { left, right } => eval(left) / eval(right),
+        Token::Mod { left, right } => eval(left) % eval(right),
+        _ => {
+            println!("error while parsing: {}", token);
+            -1
+        }
     }
 }
 
@@ -101,6 +107,18 @@ fn parse_mod(eval_string : &str) -> Token {
     return Token::Mod { left: Box::new(parse(l)), right: Box::new(parse(r))};
 }
 
+fn parse_int(eval_string : &str) -> Token {
+    return match eval_string.trim().parse::<i32>() {
+        Ok(n) => Token::Int { val: n },
+        Err(_e) =>
+            {
+                eprintln!("Invalid input {}", eval_string);
+                Token::Int { val: 0 }
+            }
+    }
+}
+
+
 fn simplify(e: Token) -> Token {
     match e {
         Token::Mult { left, right } => {
@@ -121,7 +139,7 @@ fn simplify(e: Token) -> Token {
                 }
             }
         },
-        Token::Divide { left, right } => {
+        Token::Div { left, right } => {
             let simplified_left = simplify(*left);
             let simplified_right = simplify(*right);
             if let Token::Int { val: 0 } = simplified_left {
@@ -129,7 +147,7 @@ fn simplify(e: Token) -> Token {
             } else if let Token::Int { val: 1 } = simplified_right {
                 simplified_left
             } else {
-                Token::Divide {
+                Token::Div {
                     left: Box::new(simplified_left),
                     right: Box::new(simplified_right),
                 }
@@ -166,46 +184,16 @@ fn simplify(e: Token) -> Token {
         _ => e,
     }
 }
-fn parse_int(eval_string : &str) -> Token {
-    return match eval_string.trim().parse::<i32>() {
-        Ok(n) => Token::Int { val: n },
-        Err(e) =>
-            {
-                eprintln!("Invalid input {}", eval_string);
-                Token::Int { val: 0 }
-            }
-    }
-}
 
 fn main() {
-    {
-        let e = Token::Plus {
-            left: Box::new(Token::Int { val: 3 }),
-            right: Box::new(Token::Mod {
-                left: Box::new(Token::Int { val: 1 }),
-                right: Box::new(Token::Int { val: 2 }),
-            }),
-        };
-        println!("{}", eval(&e)); // Output: 0
-        let simplified_e = simplify(e);
-        println!("{}", simplified_e); // Output: Int { val: 0 }
-    }
+
 
     {
-        let str = "2 + 10 * 3";
+        let str = "2 * 1 * 0 + 10 % 2 / 1 * 5 - 10 * 3 + 0";
         let t = parse(&str);
         println!("{}", eval(&t));
-    }
-
-    {
-        let str = "4 * 9 / 3 * 2";
-        let t = parse(&str);
-        println!("{}", eval(&t));
-    }
-
-    {
-        let str = "5 % 3";
-        let t = parse(&str);
-        println!("{}", eval(&t));
+        let simplified_e = simplify(t);
+        println!("{}", simplified_e);
+        println!("{}", eval(&simplified_e));
     }
 }
