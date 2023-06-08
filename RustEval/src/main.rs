@@ -1,34 +1,34 @@
-pub enum E {
+pub enum Token {
     Int {
         val: i32
     },
     Plus {
-        left: Box<E>,
-        right: Box<E>
+        left: Box<Token>,
+        right: Box<Token>
     },
     Mult {
-        left: Box<E>,
-        right: Box<E>
+        left: Box<Token>,
+        right: Box<Token>
     },
 }
 
-fn eval(e : &E) -> i32 {
+fn eval(e : &Token) -> i32 {
     match e {
-        E::Int { val } => return *val,
-        E::Plus { left, right } => return eval(left) + eval(right),
-        E::Mult { left, right } => return eval(left) * eval(right),
+        Token::Int { val } => return *val,
+        Token::Plus { left, right } => return eval(left) + eval(right),
+        Token::Mult { left, right } => return eval(left) * eval(right),
     }
 }
 
 
 fn main() {
     {
-        let e = E::Int { val: 1 };
+        let e = Token::Int { val: 1 };
         println!("{}", eval(&e));
     }
 
     {
-        let e = E::Plus{ left: Box::new(E::Int { val: 1 }), right: Box::new(E::Int { val: 2})};
+        let e = Token::Plus{ left: Box::new(Token::Int { val: 1 }), right: Box::new(Token::Int { val: 2})};
         println!("{}", eval(&e));
     }
 }
