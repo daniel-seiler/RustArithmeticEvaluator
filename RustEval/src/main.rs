@@ -33,7 +33,8 @@ impl fmt::Display for Token {
             Token::Int { val } => write!(f, "{}", val),
             Token::Plus { left, right } => write!(f, "{} + {}", left, right),
             Token::Mult { left, right } => write!(f, "{} * {}", left, right),
-            Token::Divide { left, right } => write!(f, "({} / {})", left, right),
+            Token::Divide { left, right } => write!(f, "{} / {}", left, right),
+            Token::Mod { left, right } => write!(f, "{} % {}", left, right),
             _ => write!(f, "err")
         }
     }
@@ -120,7 +121,7 @@ fn main() {
     {
         let e = Token::Plus {
             left: Box::new(Token::Int { val: 3 }),
-            right: Box::new(Token::Mult {
+            right: Box::new(Token::Mod {
                 left: Box::new(Token::Int { val: 1 }),
                 right: Box::new(Token::Int { val: 2 }),
             }),
