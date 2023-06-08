@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fmt::write;
 
 pub enum Token {
     Int {
@@ -12,7 +13,7 @@ pub enum Token {
         left: Box<Token>,
         right: Box<Token>
     },
-    Devide {
+    Divide {
         left: Box<Token>,
         right: Box<Token>
     },
@@ -20,8 +21,9 @@ pub enum Token {
         left: Box<Token>,
         right: Box<Token>
     },
-    Bracket {
-        val: Box<Token>
+    Mod {
+        left: Box<Token>,
+        right: Box<Token>
     }
 }
 
@@ -29,8 +31,10 @@ impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Token::Int { val } => write!(f, "{}", val),
-            Token::Plus { left, right } => write!(f, "({} + {})", left, right),
-            Token::Mult { left, right } => write!(f, "({} * {})", left, right),
+            Token::Plus { left, right } => write!(f, "{} + {}", left, right),
+            Token::Mult { left, right } => write!(f, "{} * {}", left, right),
+            Token::Divide { left, right } => write!(f, "({} / {})", left, right),
+            _ => write!(f, "err")
         }
     }
 }
@@ -40,6 +44,9 @@ fn eval(e: &Token) -> i32 {
         Token::Int { val } => *val,
         Token::Plus { left, right } => eval(left) + eval(right),
         Token::Mult { left, right } => eval(left) * eval(right),
+        Token::Divide { left, right } => eval(left) / eval(right),
+        Token::Mod { left, right} => eval(left) % eval(right),
+        _ => eval(e)
     }
 }
 
@@ -52,8 +59,26 @@ fn simplify(e: Token) -> Token {
                 Token::Int { val: 0 }
             } else if let Token::Int { val: 0 } = simplified_right {
                 Token::Int { val: 0 }
+            } else if let Token::Int { val: 1 } = simplified_right {
+               simplified_left
+            } else if let Token::Int { val: 1 } = simplified_left {
+                simplified_right
             } else {
                 Token::Mult {
+                    left: Box::new(simplified_left),
+                    right: Box::new(simplified_right),
+                }
+            }
+        },
+        Token::Divide { left, right } => {
+            let simplified_left = simplify(*left);
+            let simplified_right = simplify(*right);
+            if let Token::Int { val: 0 } = simplified_left {
+                Token::Int { val: 0 }
+            } else if let Token::Int { val: 1 } = simplified_right {
+                simplified_left
+            } else {
+                Token::Divide {
                     left: Box::new(simplified_left),
                     right: Box::new(simplified_right),
                 }
@@ -62,48 +87,41 @@ fn simplify(e: Token) -> Token {
         Token::Plus { left, right } => {
             let simplified_left = simplify(*left);
             let simplified_right = simplify(*right);
-            Token::Plus {
-                left: Box::new(simplified_left),
-                right: Box::new(simplified_right),
+            if let Token::Int { val: 0 } = simplified_left {
+                simplified_right
+            } else if let Token::Int { val: 0 } = simplified_right {
+                simplified_left
+            } else {
+                Token::Plus {
+                    left: Box::new(simplified_left),
+                    right: Box::new(simplified_right),
+                }
             }
-        }
+        },
+        Token::Minus { left, right } => {
+            let simplified_left = simplify(*left);
+            let simplified_right = simplify(*right);
+            if let Token::Int { val: 0 } = simplified_left {
+                simplified_right
+            } else if let Token::Int { val: 0 } = simplified_right {
+                simplified_left
+            } else {
+                Token::Minus {
+                    left: Box::new(simplified_left),
+                    right: Box::new(simplified_right),
+                }
+            }
+        },
         _ => e,
     }
 }
 
 fn main() {
     {
-        let e = Token::Int { val: 1 };
-        println!("{}", eval(&e)); // Output: 1
-        let simplified_e = simplify(e);
-        println!("{}", simplified_e); // Output: Int { val: 1 }
-    }
-
-    {
-        let e = Token::Plus {
-            left: Box::new(Token::Int { val: 1 }),
-            right: Box::new(Token::Int { val: 2 }),
-        };
-        println!("{}", eval(&e)); // Output: 3
-        let simplified_e = simplify(e);
-        println!("{}", simplified_e); // Output: Plus { left: Int { val: 1 }, right: Int { val: 2 } }
-    }
-
-    {
-        let e = Token::Mult {
-            left: Box::new(Token::Int { val: 0 }),
-            right: Box::new(Token::Int { val: 5 }),
-        };
-        println!("{}", eval(&e)); // Output: 0
-        let simplified_e = simplify(e);
-        println!("{}", simplified_e); // Output: Int { val: 0 }
-    }
-
-    {
         let e = Token::Plus {
             left: Box::new(Token::Int { val: 3 }),
             right: Box::new(Token::Mult {
-                left: Box::new(Token::Int { val: 0 }),
+                left: Box::new(Token::Int { val: 1 }),
                 right: Box::new(Token::Int { val: 2 }),
             }),
         };
