@@ -10,6 +10,10 @@ pub enum Token {
         left: Box<Token>,
         right: Box<Token>
     },
+    Minus {
+        left: Box<Token>,
+        right: Box<Token>
+    },
     Mult {
         left: Box<Token>,
         right: Box<Token>
@@ -195,5 +199,23 @@ fn main() {
         let simplified_e = simplify(t);
         println!("{}", simplified_e);
         println!("{}", eval(&simplified_e));
+    }
+
+    {
+        let str = "2 + 10 * 3";
+        let t = parse(&str);
+        println!("{}", eval(&t));
+    }
+
+    {
+        let str = "4 * 9 / 3 * 2";
+        let t = parse(&str);
+        println!("{}", eval(&t));
+    }
+
+    {
+        let str = "5 % 3";
+        let t = parse(&str);
+        println!("{}", eval(&t));
     }
 }
