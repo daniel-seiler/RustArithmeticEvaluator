@@ -170,9 +170,7 @@ fn simplify(e: Token) -> Token {
         Token::Minus { left, right } => {
             let simplified_left = simplify(*left);
             let simplified_right = simplify(*right);
-            if let Token::Int { val: 0 } = simplified_left {
-                simplified_right
-            } else if let Token::Int { val: 0 } = simplified_right {
+            if let Token::Int { val: 0 } = simplified_right {
                 simplified_left
             } else {
                 Token::Minus {
@@ -196,4 +194,14 @@ fn main() {
         println!("{}", simplified_e);
         println!("{}", eval(&simplified_e));
     }
+
+    {
+        let str = "0 - 5";
+        let t = parse(&str);
+        println!("{}", eval(&t));
+        let simplified_e = simplify(t);
+        println!("{}", simplified_e);
+        println!("{}", eval(&simplified_e));
+    }
+
 }
